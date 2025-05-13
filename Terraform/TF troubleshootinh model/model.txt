@@ -1,0 +1,5 @@
+There are 4 types of issue that you can experience with terraform- Language, state, Core and Provider Errors.
+Language- Error in Terraform code lines.
+State- If state is out of sync, Terraform may destroy or change your existing resource. If state is locked, you will also be blocked from runnig write operations.
+Core-These error are directly related to main terraform application. Error at this level may be a bug.
+Provider Errors- These set of errors are primarily related to Provider plugins, use the Github page for reporting and identifying the issue.
