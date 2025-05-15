@@ -265,7 +265,7 @@ BASH====
 Shell is a CLI that allows user to intract with OS via commands.
      - It seves as a mediator between user and OS enabling users to configure files/system
      - Shell also suppot scripting, allowing users to write scripts (sequence of commands) to automate tasks.
-     - there are several types of shell and broady they can be catagorised in to 2 main - Unix like shell and windows Shell
+     - there are several types of shell and broadly they can be catagorised in to 2 main - Unix like shell and windows Shell
 
 Unix-like Shells ====
 
