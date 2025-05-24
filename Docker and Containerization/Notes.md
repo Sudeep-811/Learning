@@ -238,3 +238,189 @@ docker run --name mynginx -d nginx
 - The container adds a read-write layer on top during runtime.
 - Except container layer rest of the layers are read-only and immutable(can't change). Only container can be changed.
 
+
+# Docker Compose Notes
+
+## 🧩 What is Docker Compose?
+- Tool to run multi-container Docker apps.
+- Configured using a `docker-compose.yml` file. (Yaml- yet another markup language)
+- Manages services, networks, and volumes.
+
+---
+
+## 🛠️ Basic Example
+
+```yaml
+version: '3.8'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: mydb
+
+
+# Docker Compose Commands
+
+
+# Docker Compose: Using a Custom File
+
+## 📄 Command
+```bash
+docker-compose -f filename.yaml up -d
+
+
+-f filename.yaml: Use a specific Compose file.
+
+up: Create and start containers.
+
+-d: Detached mode (background).
+
+
+| Command                             | Description                                      |
+|-------------------------------------|--------------------------------------------------|
+| `docker-compose up`                | Create and start all containers                  |
+| `docker-compose up -d`             | Start containers in the background (detached)    |
+| `docker-compose down`              | Stop and remove containers, networks, volumes    |
+| `docker-compose build`             | Build or rebuild services from Dockerfile        |
+| `docker-compose start`             | Start existing stopped services                  |
+| `docker-compose stop`              | Stop running services without removing them      |
+| `docker-compose restart`           | Restart services                                 |
+| `docker-compose ps`                | List containers managed by Compose               |
+| `docker-compose logs`              | View output (logs) from services                 |
+| `docker-compose exec <service> sh` | Run command (like shell) inside a container      |
+| `docker-compose run <service>`     | Run a one-off command for a service              |
+| `docker-compose config`            | Validate and view the final Compose config       |
+
+
+# Dockerizing an Application
+
+---
+
+## What is Dockerizing?
+
+Dockerizing means **packaging your application and its environment** (dependencies, runtime, libraries) inside a Docker container so it can run reliably anywhere — on any machine or cloud.
+
+---
+
+## Why Dockerize?
+
+- Ensures **consistency** across development, testing, and production.
+- Simplifies deployment and scaling.
+- Removes "works on my machine" issues.
+
+---
+
+## Basic Steps to Dockerize an App
+
+1. Write your application code.
+2. Create a `Dockerfile` to specify how to build the app image.
+3. Build the Docker image.
+4. Run the app inside a Docker container.
+
+---
+
+# Important Dockerfile Instructions
+
+- **FROM**  
+  Specifies the base image for your Docker image.  
+  Example: `FROM node:18`
+
+- **WORKDIR**  
+  Sets the working directory inside the container.  
+  Example: `WORKDIR /app`
+
+- **COPY**  
+  Copies files/folders from host to container.  
+  Example: `COPY package*.json ./`
+
+- **RUN**  
+  Runs commands inside the container during build (e.g., install dependencies).  
+  Example: `RUN npm install`
+
+- **EXPOSE**  
+  Documents which port the container listens on at runtime.  
+  Example: `EXPOSE 3000`
+
+- **CMD**  
+  Defines the default command to run when the container starts.  
+  Example: `CMD ["npm", "start"]`
+
+- **ENTRYPOINT**  
+  Sets the container’s main executable (more rigid than CMD).  
+  Example: `ENTRYPOINT ["python3"]`
+
+- **ENV**  
+  Sets environment variables inside the container.  
+  Example: `ENV NODE_ENV=production`
+
+- **ARG**  
+  Defines build-time variables that can be passed during build.  
+  Example: `ARG VERSION=1.0`
+
+- **USER**  
+  Specifies which user to run the container as.  
+  Example: `USER node`
+
+- **VOLUME**  
+  Defines mount points for external volumes.  
+  Example: `VOLUME ["/data"]`
+
+---
+
+> **Note:**  
+> `CMD` and `ENTRYPOINT` can be used together for flexible command execution.
+> We can have multiple RUN commands but only single CMD command in docker file.
+
+# Docker Build Command
+
+```bash
+docker build -t testapp:1.0.
+
+docker build: Builds a Docker image from a Dockerfile.
+
+-t testapp:1.0000000: Tags the image with name testapp and version/tag 1.0000000.
+
+.: Specifies the build context (current directory).
+
+# Pushing Docker Image to Docker Repository
+
+## Steps to Push a Docker Image
+
+1. **Login to Docker Hub (or other Docker registry)**
+   ```bash
+   docker login
+   Enter your username and password when prompted.
+
+2. docker push your-username/your-image-name:tag
+    This uploads the image to Docker Hub or the configured registry.
+
+# Docker Volumes
+
+## What are Docker Volumes?
+- Docker volumes are used to **persist data** generated by and used by Docker containers.
+- Volumes are stored outside the container filesystem on the host machine.
+- They allow data to survive container restarts, removals, and upgrades.
+
+## Why Use Volumes?
+- Persist data beyond the lifecycle of a container.
+- Share data between multiple containers.
+- Manage storage more efficiently than bind mounts.
+- Avoid storing data inside containers, which can be ephemeral.
+
+## Creating and Using Volumes
+
+### 1. Create a Volume
+```bash
+docker volume create my_volume
