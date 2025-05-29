@@ -540,3 +540,170 @@ up: Create and start containers.
 2. docker push your-username/your-image-name:tag
     This uploads the image to Docker Hub or the configured registry.
 
+# 🐳 Multi-Stage Docker Builds
+
+## ✅ What Is It?
+
+A **multi-stage Docker build** lets you use **multiple `FROM` statements** in one Dockerfile.  
+Each stage can use a different base image and pass only what’s needed to the next stage.
+
+This helps you:
+- Build large apps (with tools, compilers, etc.)
+- **Reduce final image size** by excluding unnecessary build files/tools
+- Improve **security and performance**
+
+---
+
+## 🧠 Why Use It?
+
+Without multi-stage builds:
+- You might include unnecessary files (build tools, temp files, etc.)
+- Final images are large and less secure
+
+With multi-stage builds:
+- You separate **build environment** and **runtime environment**
+- Final image only contains what's needed to run
+
+---
+
+## 🔧 Basic Syntax
+
+```dockerfile
+# Stage 1: Build
+FROM node:18 AS builder
+WORKDIR /app
+COPY . .
+RUN npm install && npm run build
+
+# Stage 2: Run
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+```
+
+# 📊 Monitoring and 📝 Logging in Docker
+
+Monitoring and logging are essential for understanding what’s happening inside your Docker containers and ensuring applications run smoothly.
+
+---
+
+## 📝 Docker Logging
+
+Docker captures logs from containers' **STDOUT** and **STDERR** streams.
+
+### 🔹 Basic Logging Commands
+
+```bash
+# View logs from a container
+docker logs <container-name>
+
+# Follow logs in real-time
+docker logs -f <container-name>
+
+# Limit logs
+docker logs --tail 100 <container-name>
+
+#You can also redirect logs into a file via nohup cmd
+nohup docker attach <docker id> &    # The logs will be save into a file named nohup
+
+
+# ⚙️ Docker Orchestration & Kubernetes
+
+## 🧩 What is Orchestration?
+
+**Orchestration** means automating the deployment, scaling, and management of containerized applications.
+
+When you have **many containers**, you need a way to:
+- Run them across multiple machines
+- Restart them if they crash
+- Scale them up/down based on load
+- Update them with zero downtime
+
+That's where tools like **Kubernetes** come in.
+
+
+# ☸️ Kubernetes (K8s) - Simplified Guide
+
+## ✅ What is Kubernetes?
+
+**Kubernetes** is an open-source container orchestration platform developed by Google.
+
+It automates:
+- Deployment
+- Scaling
+- Load balancing
+- Self-healing
+of containerized applications.
+
+> Think of it as a **container manager** that runs your Docker containers across many servers.
+
+---
+
+## 💡 Why Use Kubernetes?
+
+- Run apps reliably at scale
+- Handle container crashes automatically
+- Load balance traffic to containers
+- Roll out updates without downtime
+- Keep apps running even if machines fail
+
+---
+
+## 🧩 Key Concepts in Kubernetes
+
+| Term            | Description |
+|-----------------|-------------|
+| **Cluster**     | A group of machines running Kubernetes |
+| **Node**        | A single machine (VM or physical) in the cluster |
+| **Pod**         | The smallest unit in K8s (contains one or more containers) |
+| **Deployment**  | Describes how to create and manage Pods |
+| **Service**     | Exposes Pods to the network (internal or external) |
+| **Namespace**   | Logical grouping of resources for isolation |
+| **ConfigMap**   | External configuration for your app |
+| **Secret**      | Encrypted sensitive data (e.g., passwords) |
+
+---
+
+## 🛠️ Basic kubectl Commands
+
+```bash
+# View all running pods
+kubectl get pods
+
+# Deploy an app using a YAML file
+kubectl apply -f deployment.yaml
+
+# Check services
+kubectl get services
+
+# Scale a deployment
+kubectl scale deployment my-app --replicas=3
+
+# Delete a resource
+kubectl delete -f deployment.yaml
+
+```
+---
+
+## 🐳 Docker's Native Orchestration: Docker Swarm
+
+### 🔹 What is Docker Swarm?
+
+- Built-in orchestration tool in Docker
+- Easier to set up, but less powerful than Kubernetes
+- Uses same Docker CLI and concepts
+
+### 🔹 Key Features
+- Cluster of Docker nodes (Swarm mode)
+- Load balancing
+- Service discovery
+- Rolling updates
+
+```bash
+# Initialize swarm
+docker swarm init
+
+# Deploy a service
+docker service create --replicas 3 -p 80:80 nginx
+
+```
