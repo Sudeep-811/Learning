@@ -156,6 +156,24 @@ Similar to Continuous Delivery, but fully automated. Every successful code chang
 
 GitHub Actions uses YAML files to define workflows that automate tasks like building, testing, and deploying code. These workflows consist of several core components:
 
+
+
+
+## 🔑 GitHub Actions YAML Key Components
+
+| Key        | Description                                                        |
+| ---------- | ------------------------------------------------------------------ |
+| `name:`    | Name of the workflow                                               |
+| `on:`      | Trigger events (e.g., `push`, `pull_request`, `workflow_dispatch`) |
+| `jobs:`    | Defines one or more jobs                                           |
+| `runs-on:` | Environment for the job (e.g., `ubuntu-latest`, `windows-latest`)  |
+| `steps:`   | A series of actions or shell commands                              |
+| `uses:`    | Run a pre-defined action (e.g., checkout code)                     |
+| `run:`     | Run a shell command                                                |
+| `env:`     | Define environment variables                                       |
+| `with:`    | Provide inputs to `uses` actions                                   |
+
+
 ---
 
 ### 1. **Workflow**
@@ -507,3 +525,81 @@ Good README includes:
 
 ✅ You're now ready to automate building, testing, and deploying your code!
 
+# 🛒 Using Marketplace Actions in GitHub Actions
+
+GitHub Marketplace provides thousands of reusable **actions** that simplify your CI/CD workflows.
+
+---
+
+## 🔍 1. Find an Action
+
+Go to: [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
+
+Example actions:
+- `actions/checkout` → Checks out code
+- `actions/setup-node` → Sets up Node.js
+- `aws-actions/configure-aws-credentials` → Configure AWS for deployment
+- `docker/login-action` → Log in to DockerHub
+
+---
+
+## 🧪 2. Basic Usage in Workflow
+
+Use `uses:` keyword to call a Marketplace action:
+
+```yaml
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+
+# 📊 Workflow Visualization & Monitoring in GitHub Actions
+
+Understand how to **view, debug, and monitor** your GitHub Actions workflows effectively.
+
+---
+
+## 🖼️ 1. Visualizing Workflow Runs
+
+### 🔗 Navigation:
+**Go to your GitHub repository → Actions tab**
+
+- See a list of workflows triggered by `push`, `PR`, `schedule`, etc.
+- Click any run to:
+  - View workflow name, trigger, duration
+  - Expand jobs and individual steps
+  - View logs and artifacts
+
+---
+
+## 🧩 2. Workflow Visualization Example
+
+Each workflow shows:
+- **Graph View** (left panel): Visualizes jobs and their dependencies
+- **Step View**: Lists each step inside jobs (e.g., `checkout`, `npm install`, `run tests`)
+- **Status**:
+  - ✅ Success
+  - ❌ Failed
+  - ⏳ In Progress
+
+---
+
+## 🛠️ 3. Viewing Logs
+
+Click any **step** to:
+- See raw output (`stdout`, `stderr`)
+- Debug errors with line-by-line log output
+- Search logs using `Ctrl+F` or in-browser search
+
+Example error logs:
+```bash
+Error: Cannot find module 'express'
+npm ERR! code ELIFECYCLE

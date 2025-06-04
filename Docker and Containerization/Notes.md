@@ -656,7 +656,7 @@ of containerized applications.
 | **Cluster**     | A group of machines running Kubernetes |
 | **Node**        | A single machine (VM or physical) in the cluster |
 | **Pod**         | The smallest unit in K8s (contains one or more containers) |
-| **Deployment**  | Describes how to create and manage Pods |
+| **Deployment**  | Describes how to create and manage Pods / collection of pods (replica) |
 | **Service**     | Exposes Pods to the network (internal or external) |
 | **Namespace**   | Logical grouping of resources for isolation |
 | **ConfigMap**   | External configuration for your app |
