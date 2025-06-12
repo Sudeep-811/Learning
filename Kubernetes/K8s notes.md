@@ -493,3 +493,304 @@ Use manual scaling for testing or predictable workloads.
 Use HPA for dynamic workloads (e.g., traffic spikes).
 
 Make sure your application exposes resource requests/limits for autoscaling to work.
+
+
+
+# 📦 Kubernetes Workload Controllers
+
+Kubernetes provides different controllers to manage pod lifecycles and scaling.
+
+---
+
+## 🔁 ReplicaSet
+
+- Ensures a **specified number of pod replicas** are always running.
+- Replaces pods if they crash or are deleted.
+
+### ✅ Use Case:
+- Maintain **high availability** by ensuring N identical pod replicas.
+
+### ❌ Limitation:
+- Not used directly for updates. Use **Deployment** instead.
+
+---
+
+## 🚀 Deployment
+
+- **Manages ReplicaSets** and provides features like:
+  - Rolling updates
+  - Rollbacks
+  - History tracking
+
+### ✅ Use Case:
+- Standard way to deploy and manage **stateless** applications.
+
+### 🔄 Example Flow:
+1. Deployment creates ReplicaSet
+2. ReplicaSet manages Pods
+3. New image = new ReplicaSet → rolling update
+
+---
+
+## 🧱 StatefulSet
+
+- Designed for **stateful applications** (e.g., databases).
+- Provides:
+  - Stable pod names (`pod-0`, `pod-1`, ...)
+  - Stable storage (PersistentVolumes)
+  - Ordered deployment and scaling
+
+### ✅ Use Case:
+- Applications that need:
+  - Persistent identity
+  - Ordered startup/shutdown
+  - Stable storage (e.g., MySQL, Cassandra)
+
+---
+
+## 🔍 Comparison Table
+
+| Feature            | ReplicaSet       | Deployment       | StatefulSet        |
+|--------------------|------------------|------------------|--------------------|
+| Pod Management     | ✔ Yes            | ✔ Yes            | ✔ Yes              |
+| Updates Support    | ❌ No             | ✔ Rolling update | ✔ Ordered update   |
+| Unique Pod Names   | ❌ No             | ❌ No             | ✔ Yes (`pod-0`, etc.) |
+| Persistent Storage | ❌ No             | ❌ No             | ✔ Yes              |
+| Use Case           | Basic scaling     | Stateless apps   | Stateful apps      |
+
+---
+
+## 🧠 Summary
+
+- **ReplicaSet**: Ensures desired pod count.
+- **Deployment**: Manages ReplicaSet with rolling updates.
+- **StatefulSet**: Manages stateful apps with stable identities and volumes.
+
+
+
+
+# 🔄 Rollout and Rollback Strategies in Kubernetes
+
+Kubernetes supports **safe and controlled updates** to applications using rollouts,  
+and allows **quick recovery** using rollbacks.
+
+---
+
+## 🚀 Rollout Strategy
+
+A **rollout** updates your application pods to a new version.
+
+### 🎯 Default: `RollingUpdate`
+
+- Updates pods **one at a time** to prevent downtime.
+- Ensures **zero-downtime deployments**.
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1          # Extra pod allowed during update
+    maxUnavailable: 1    # Max pods that can be unavailable
+```
+
+## ❌ Alternative: Recreate
+Stops all old pods, then starts new ones.
+
+May cause downtime.
+To trigger-
+```yml
+
+kubectl set image deployment/my-app my-container=my-image:v2
+
+```
+
+# 🌐 Kubernetes Services
+
+**Services** in Kubernetes expose a set of Pods as a network service,  
+allowing communication within the cluster or with the outside world.
+
+---
+
+## 🚦 1. Types of Services
+
+| Type            | Access Scope           | Description                                         |
+|------------------|------------------------|-----------------------------------------------------|
+| **ClusterIP**     | Internal-only          | Default type. Exposes service **inside the cluster** |
+| **NodePort**      | External via Node IP   | Opens a **port on each node** for external access   |
+| **LoadBalancer**  | External via LB        | Provisions **external load balancer** (cloud only)  |
+| **ExternalName**  | DNS redirect           | Maps service to **external DNS name**               |
+
+---
+
+### ✅ ClusterIP Example (default)
+
+```yaml
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+```
+
+### 🌍 NodePort Example
+
+```yaml
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      nodePort: 30007
+```
+
+### ☁️ LoadBalancer Example
+
+```yaml
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+```
+
+## 🧭 2. Service Discovery Mechanism
+
+Kubernetes provides built-in **service discovery** using the following methods:
+
+---
+
+### 🔹 Environment Variables
+
+- Kubernetes injects environment variables into each Pod.
+- Example vars:  
+  - `SERVICE_HOST`  
+  - `SERVICE_PORT`  
+- These allow containers to discover and connect to services inside the cluster.
+
+---
+
+### 🔹 DNS (CoreDNS)
+
+- **CoreDNS** is the default DNS service in Kubernetes.
+- Every service is assigned a DNS name automatically.
+
+#### 🧩 DNS Format:
+
+```pgaql
+<service-name>.<namespace>.svc.cluster.local
+
+```
+## 🚀 3. Exposing Applications
+
+How to expose your application in different scenarios:
+
+| 🎯 Goal                        | ✅ Recommended Approach                 |
+|-------------------------------|----------------------------------------|
+| Internal pod-to-pod access    | Use `ClusterIP`                        |
+| Access from browser (local)   | Use `NodePort` or `kubectl port-forward` |
+| Public internet access        | Use `LoadBalancer` (or `Ingress`)      |
+| Use domain name               | Use `Ingress + DNS records`            |
+
+## 🌐 4. DNS in Kubernetes
+
+- Kubernetes uses **CoreDNS** to manage internal DNS.
+- Every service automatically gets a DNS name.
+
+### 🧩 DNS Format:
+
+```pgsql
+<service-name>.<namespace>.svc.cluster.local
+
+```
+
+
+- Pods use this DNS to communicate with services.
+- No need to hard-code IP addresses — Kubernetes handles service discovery dynamically.
+
+# 🔧 ConfigMaps & Secrets in Kubernetes
+
+Kubernetes provides **ConfigMaps** and **Secrets** to manage configuration and sensitive data separately from application code.
+
+
+## 📊 ConfigMap vs Secret
+
+| Feature       | ConfigMap         | Secret               |
+|---------------|-------------------|-----------------------|
+| Purpose       | Store config data | Store sensitive data |
+| Encoded       | No                | Yes (Base64)         |
+| Use as env    | ✔ Yes             | ✔ Yes                |
+| Use as volume | ✔ Yes             | ✔ Yes                |
+
+
+---
+
+## 1. 📦 Application Configuration in Kubernetes
+
+- Applications often need config values (like URLs, ports, etc.).
+- Kubernetes stores this **externally** from the container using:
+  - **ConfigMaps** for general config
+  - **Secrets** for sensitive data (like passwords, API keys)
+
+---
+
+## 2. 🛠️ Creating and Using ConfigMaps
+
+### ✅ Create ConfigMap from literal values
+
+```bash
+kubectl create configmap app-config --from-literal=APP_MODE=production
+```
+
+### ✅ Create ConfigMap from a file
+
+```bash
+kubectl create configmap app-config --from-file=config.txt
+```
+
+### ✅ Use ConfigMap in a Pod (as env var)
+
+```yaml
+
+env:
+  - name: APP_MODE
+    valueFrom:
+      configMapKeyRef:
+        name: app-config
+        key: APP_MODE
+```
+
+
+### ✅  Use ConfigMap as a Volume
+
+```yaml
+
+volumes:
+  - name: config-volume
+    configMap:
+      name: app-config
+
+volumeMounts:
+  - name: config-volume
+    mountPath: /etc/config
+
+```
+
+## 3. 🔐 Managing Sensitive Information with Secrets
+
+Secrets store sensitive data securely in Base64.
+
+Used for credentials, tokens, keys, etc.
+
+```bash
+
+kubectl create secret generic db-secret --from-literal=DB_PASS=admin123
+```
+## 4. 📁 Mounting Configurations into Pods
+
+You can mount both **ConfigMaps** and **Secrets** into Pods using two main methods:
+
+| Method       | Purpose                            |
+|--------------|-------------------------------------|
+| Environment  | For small or simple configuration values |
+| Volumes      | For files, configs, or certificates     |
+
+- **Environment variables** are easier for small values.
+- **Volumes** are preferred when applications expect files or when storing structured config data.
+
