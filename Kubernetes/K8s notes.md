@@ -794,3 +794,242 @@ You can mount both **ConfigMaps** and **Secrets** into Pods using two main metho
 - **Environment variables** are easier for small values.
 - **Volumes** are preferred when applications expect files or when storing structured config data.
 
+# 🔄 CI/CD for Kubernetes (Expanded)
+
+---
+
+## 1. Kubernetes Manifests in Source Control
+
+- **Why store manifests in Git?**  
+  - **Version history**: track when and why changes happened  
+  - **Collaboration**: use pull requests for review and approval  
+  - **Audit & compliance**: easily see who changed what  
+
+- **What to commit**  
+  - Resource definitions: Deployments, Services, ConfigMaps, Secrets (encrypted)  
+  - Namespace and RBAC manifests  
+  - Ingress rules, NetworkPolicies, StorageClasses  
+
+- **Managing complexity**  
+  - **Kustomize**: overlay base manifests with environment‑specific patches  
+  - **Helm**: templatize manifests and supply values per environment  
+  - **Directory structure** example:  
+    ```
+    ├── base/
+    │   ├── deployment.yaml
+    │   └── service.yaml
+    ├── overlays/
+    │   ├── dev/
+    │   └── prod/
+    ```
+
+---
+
+## 2. `kubectl` and CI/CD Pipelines
+
+- **Integrating `kubectl`**  
+  - Use `kubectl apply -f path/to/manifests` to create/update resources  
+  - Use `kubectl diff -f` (v1.18+) to preview changes  
+
+- **CI stages**  
+  1. **Lint & Validate**  
+     - `kubeval`, `kubectl apply --dry-run=client`  
+  2. **Build & Test**  
+     - Build container image, run unit/integration tests  
+  3. **Push**  
+     - Push to registry (e.g., Docker Hub, ECR, GCR)  
+
+- **CD stages**  
+  1. **Deploy**  
+     - `kubectl apply`, or `helm upgrade --install`  
+  2. **Smoke tests**  
+     - Hit health endpoints, verify rollout status  
+  3. **Notify/Rollback**  
+     - On failure, run `kubectl rollout undo deployment/<name>`
+
+- **Popular CI/CD tools**  
+  - **GitHub Actions**: workflows in `.github/workflows/`  
+  - **GitLab CI**: `.gitlab-ci.yml` with Kubernetes executor  
+  - **Jenkins**: scripted/pipeline jobs with `kubectl` plugins  
+  - **Argo CD / Flux**: GitOps—cluster auto‑sync with Git repo  
+
+---
+
+## 3. Deployment Strategies
+
+### 🔵 Blue/Green
+
+- **How it works**  
+  1. Deploy v2 alongside v1 in separate namespaces or labels (`blue`, `green`)  
+  2. Switch service selector or load‑balancer target from blue → green  
+  3. Keep v1 intact until v2 is verified  
+
+- **Pros & Cons**  
+  - ✅ Instant rollback: switch back to blue  
+  - ✅ Zero‑downtime if configured correctly  
+  - ❌ Requires double capacity (two environments)  
+
+### 🟡 Canary
+
+- **How it works**  
+  1. Deploy a small subset of pods running v2 (e.g., 10%)  
+  2. Route a fraction of traffic to canary pods via weighted Service or Ingress  
+  3. Monitor metrics (error rate, latency)  
+  4. Gradually increase percentage until 100%  
+
+- **Pros & Cons**  
+  - ✅ Lower resource overhead  
+  - ✅ Gradual risk mitigation  
+  - ❌ More complex routing and monitoring setup  
+
+---
+
+## 4. Environment Management
+
+- **Namespaces vs. Separate Clusters**  
+  - **Namespaces**: logical isolation within one cluster (good for dev/test)  
+  - **Clusters**: physical separation (stronger isolation for prod)  
+
+- **Config variation**  
+  - **Helm values files**: `values-dev.yaml`, `values-prod.yaml`  
+  - **Kustomize overlays**: patch `replicas`, `imageTag`, resource limits  
+
+- **Secrets & ConfigMaps per environment**  
+  - Store dev/test credentials separately from prod  
+  - Use sealed‑secrets or Sops for encrypting prod secrets in Git  
+
+- **Access control**  
+  - RBAC roles bound to namespaces or clusters  
+  - Limit who can deploy to prod vs. dev  
+
+- **Automating promotion**  
+  - GitOps: merge to `main` branch triggers prod deploy  
+  - Pull‑request-based promotion between branches/environments  
+
+---
+
+
+# Helm Basics
+
+## Helm Architecture and Components
+
+- **Helm (Client)**: Helm is the package manager for Kubernetes, and `helm` is its command-line client. It simplifies installing and managing Kubernetes applications by using *charts* (bundled resource definitions).  
+- **Chart**: A *chart* is a Helm package containing all the Kubernetes manifests and metadata needed to deploy an application. You can think of a chart like a container image or OS package (e.g. Homebrew formula) that bundles templates and default values.  
+- **Release**: A *release* is a specific deployment of a chart in a cluster. Each time you run `helm install`, Helm creates a new release with a unique name. For example, installing a MySQL chart three times under different release names results in three separate releases. Each release tracks its own revision history.  
+- **Chart.yaml**: This required file (in each chart directory) contains metadata about the chart (name, version, etc.). It includes fields like `name`, `version`, `apiVersion`, `appVersion`, `maintainers`, etc.  
+- **values.yaml**: Each chart includes a `values.yaml` file that defines the default configuration values (parameters) for the chart. These values are used to render the templates, but can be overridden by the user at install/upgrade time.  
+- **templates/**: Charts have a `templates/` directory containing Kubernetes manifest *templates* (YAML files with Go templating). When you install a chart, Helm combines these templates with the values (from `values.yaml` or user overrides) to generate the final Kubernetes resource files.  
+- **Library Charts**: A *library chart* is a special chart type introduced in Helm 3 that contains reusable template code (helpers or primitives) for other charts to import. Library charts are not installable on their own; they exist only to share common snippets across charts (helping avoid duplication).  
+- **Tiller (Helm v2 only)**: In Helm 2, *Tiller* was the in-cluster server component that managed releases. Tiller has been **removed** in Helm 3. Helm 3 now runs entirely client-side, using the same Kubernetes RBAC credentials as `kubectl`. This simplifies security (no extra server in the cluster).
+
+## Helm Chart and Template Structure
+
+A Helm chart is organized as a directory with a fixed layout. For example:
+
+```
+mychart/
+├─ Chart.yaml          # REQUIRED: Chart metadata (name, version, etc.)
+├─ values.yaml         # REQUIRED: Default values for this chart
+├─ charts/             # OPTIONAL: Dependent charts (used as subcharts)
+├─ templates/          # REQUIRED: Templates for Kubernetes resources
+│  ├─ _helpers.tpl     # Convention: reusable template helpers/partials
+│  ├─ NOTES.txt        # OPTIONAL: Post-installation notes
+│  └─ <other .yaml>    # Template files (services, deployments, etc.)
+├─ crds/               # OPTIONAL: CustomResourceDefinitions to be installed
+├─ values.schema.json  # OPTIONAL: JSON Schema to validate values.yaml
+├─ README.md           # OPTIONAL: Human-readable chart documentation
+└─ LICENSE             # OPTIONAL: License file
+```
+
+## Helm Repositories
+
+A *Helm chart repository* is simply a web-accessible HTTP server (or storage bucket) that hosts packaged charts and an `index.yaml` file. The `index.yaml` serves as an index of all charts in the repo, listing each chart’s name, version, and metadata.
+
+Helm provides commands to manage chart repositories: adding, listing, updating, and removing them. Some key commands include:
+
+- `helm repo add <name> <url>`: Add a chart repository.
+- `helm repo list`: List all configured repositories and their URLs.
+- `helm repo update`: Fetch the latest `index.yaml` from all registered repos.
+- `helm search repo <keyword>`: Search for charts in the locally configured repos.
+- `helm repo remove <name>`: Remove a repository by name.
+
+## Installing Applications with Helm
+
+To deploy (install) an application with Helm, use the `helm install` command:
+
+```bash
+helm install mysite bitnami/nginx
+```
+
+By default, the chart’s templates are rendered with the default values in `values.yaml`. You can customize the deployment by overriding values:
+
+- **Override via CLI**:
+  ```bash
+  helm install mydb bitnami/mysql --set mysqlRootPassword=secret,service.type=LoadBalancer
+  ```
+- **Override via file**:
+  ```bash
+  helm install mydb -f custom-values.yaml bitnami/mysql
+  ```
+
+Other useful commands:
+
+- `helm upgrade`: Upgrade an existing release.
+- `helm rollback`: Roll back a release to a previous revision.
+- `helm uninstall`: Uninstall a release from the cluster.
+
+
+
+# Kubernetes Monitoring Basics
+
+## Resource Monitoring Approaches
+
+**Definition**: Resource monitoring in Kubernetes involves tracking the usage of system resources (CPU, memory, disk, network) by nodes, pods, and containers. This helps identify performance bottlenecks, over-provisioning, or potential failures.
+
+### Key Approaches:
+- **Node-level Monitoring**: Collect metrics on node CPU, memory, disk usage (e.g., via cAdvisor, kubelet).
+- **Pod/Container Monitoring**: Track resource usage per container using metrics server or Prometheus.
+- **Cluster-wide Monitoring**: Aggregate metrics from all nodes and pods for a global view.
+- **Custom Metrics**: Define application-specific metrics exposed via endpoints (e.g., `/metrics`).
+
+## Health Probes
+
+**Definition**: Kubernetes uses health probes to check the status of containers. Probes help determine when to restart or stop routing traffic to a pod.
+
+### Types of Probes:
+- **Liveness Probe**: Checks if the container is still running. If it fails, Kubernetes restarts the container.
+- **Readiness Probe**: Checks if the container is ready to accept traffic. If it fails, the container is removed from service endpoints.
+- **Startup Probe**: Used to give slow-starting containers time to initialize before liveness probes start.
+
+### Example (HTTP):
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 3
+  periodSeconds: 10
+```
+
+## Basic Logging Practices
+
+**Definition**: Logging in Kubernetes involves capturing application logs for debugging and observability.
+
+### Practices:
+- **stdout/stderr Logging**: Apps should log to stdout and stderr; kubelet collects these logs.
+- **Centralized Logging**: Use tools like Fluentd, Logstash, or Loki to collect and store logs in systems like Elasticsearch or Grafana.
+- **Log Rotation**: Implement log rotation to avoid disk overuse.
+- **Structured Logging**: Use JSON or key-value format for easier parsing.
+
+## Monitoring Tools Overview
+
+**Definition**: Various tools provide monitoring, visualization, and alerting capabilities for Kubernetes clusters.
+
+### Popular Tools:
+- **Prometheus**: Time-series metrics collection and alerting. Widely used with Kubernetes.
+- **Grafana**: Dashboard and visualization tool often used with Prometheus.
+- **Metrics Server**: Lightweight resource metrics collection for Kubernetes autoscaling.
+- **Kube-state-metrics**: Exposes cluster state metrics (e.g., deployments, pods).
+- **ELK Stack**: Elasticsearch, Logstash, Kibana for log aggregation and analysis.
+- **Loki**: Lightweight log aggregation system by Grafana Labs.
+- **Jaeger**: Distributed tracing system for tracking requests across microservices.
